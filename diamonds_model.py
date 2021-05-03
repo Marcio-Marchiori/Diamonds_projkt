@@ -3,11 +3,22 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import category_encoders as ce
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
 
 
 diamonds = pd.DataFrame(pd.read_csv('diamonds.csv'))
 diamonds.drop_duplicates(inplace=True)
-diamonds = diamonds.drop(diamonds[(diamonds.x <2) | (diamonds.z >15) | (diamonds.y >20) | (diamonds.carat >4) | (diamonds.depth < 49) | (diamonds.depth > 75)].index)
+cols_use = ['carat', 'depth', 'table', 'x', 'y', 'z']
+
+diamonds = diamonds.drop(diamonds[(diamonds.x <2) | (diamonds.z >15) | (diamonds.z <1) | (diamonds.y >20) | (diamonds.carat >3) | (diamonds.depth < 49) | (diamonds.depth > 75)].index)
+diamonds['price'] = np.log10(diamonds['price'])
+
+
+diamonds[cols_use] = scaler.fit_transform(diamonds[cols_use])
+#diamonds['carat'] = (diamonds['carat']-diamonds['carat'].mean())/diamonds['carat'].std()
+
 
 encoded_d = ce.OneHotEncoder(cols='cut', handle_unknown='return_nan',return_df=True, use_cat_names=True)
 data_encoded = encoded_d.fit_transform(diamonds)
@@ -15,6 +26,8 @@ encoded_c = ce.OneHotEncoder(cols='color', handle_unknown='return_nan',return_df
 data_encoded_color = encoded_c.fit_transform(data_encoded)
 encoded_cla = ce.OneHotEncoder(cols='clarity', handle_unknown='return_nan',return_df=True, use_cat_names=True)
 data_encoded_final = encoded_cla.fit_transform(data_encoded_color)
+
+
 
 model = LinearRegression()
 X = data_encoded_final[['carat', 'cut_Premium', 'cut_Good', 'cut_Very Good', 'cut_Ideal','cut_Fair', 'color_E', 'color_I','color_J', 'color_H', 'color_F','color_G', 'color_D', 'clarity_SI1', 'clarity_VS1', 'clarity_VS2','clarity_SI2', 'clarity_VVS2', 'clarity_VVS1', 'clarity_I1','clarity_IF', 'depth', 'table', 'x', 'y', 'z']]
